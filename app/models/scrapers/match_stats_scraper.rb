@@ -27,7 +27,7 @@ module Scrapers
     end
     
     # The master server returns all data serialized in PHP form. Luckily, there
-    # exists a library in ruby to unserialize such data.
+    # exists a library in ruby to unserialize PHP objects.
     def get_match_data(match_id)
       uri = URI.parse match_url(match_id)
       resp = Net::HTTP.get_response uri
@@ -87,30 +87,22 @@ module Scrapers
     
     def save_match(match_id)
       match_data = get_match_data(match_id)
-      
       save_match_summary(match_data)
       save_player_stats(match_data)
     end
     
-    def save_match_summary(match_data)
-      map = {
-        'match_id' => 'id',
-        'class' => 'mclass'
-      }
-      
-      filter = [
-        'date',
-        'time'
-      ]
-      
+    def save_match_summary(match_data)      
       match_id = match_id_from_data(match_data)
       match_summary = match_data['match_summ'][match_id]
       
-      remap_value_names(map, match_summary)
-      filter_values(filter, match_summary)
+      remap_value_names(Match.scraper_remap, match_summary)
+      filter_values(Match.scraper_filter, match_summary)
       match_summary = typed_values(Match, match_summary)
       
-      Match.create(match_summary)
+      # The id must be set explicitly, or else Rails will use its own
+      Match.create(match_summary) do |match|
+        match.id = match_summary['id']
+      end
     end
     
     def save_player_stats(match_data)
