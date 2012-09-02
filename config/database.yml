@@ -1,0 +1,14 @@
+development:
+  adapter: postgresql
+  database: honapi_development
+  host: localhost
+
+test:
+  adapter: postgresql
+  database: honapi_test
+  host: localhost
+
+production:
+  adapter: postgresql
+  database: honapi_production
+  host: localhost
