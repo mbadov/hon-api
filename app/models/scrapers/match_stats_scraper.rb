@@ -65,7 +65,6 @@ module Scrapers
       typed_values = {}
 
       values.each do |stat_name, stat_value|
-        puts stat_name unless klass.columns_hash[stat_name]
         type = klass.columns_hash[stat_name].type
         typed_values[stat_name] = typed_value(stat_value, type)
       end
