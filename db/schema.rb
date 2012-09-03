@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120901170010) do
+ActiveRecord::Schema.define(:version => 20120902160224) do
 
   create_table "heroes", :force => true do |t|
   end
@@ -91,6 +91,11 @@ ActiveRecord::Schema.define(:version => 20120901170010) do
     t.text    "nickname"
     t.text    "cli_name"
   end
+
+  add_index "match_players", ["account_id"], :name => "index_match_players_on_account_id"
+  add_index "match_players", ["hero_id"], :name => "index_match_players_on_hero_id"
+  add_index "match_players", ["match_id", "account_id"], :name => "match_id_account_id_check", :unique => true
+  add_index "match_players", ["match_id"], :name => "index_match_players_on_match_id"
 
   create_table "matches", :force => true do |t|
     t.integer  "server_id"

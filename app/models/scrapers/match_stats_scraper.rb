@@ -26,19 +26,47 @@ module Scrapers
       "http://masterserver.hon.s2games.com/client_requester.php?f=get_match_stats&match_id[]=#{match_id}&cookie=#{@cookie}"
     end
     
-    # The master server returns all data serialized in PHP form. Luckily, there
-    # exists a library in ruby to unserialize PHP objects.
+    # Inserts match data into the database from the master server
+    def save_match_from_web(match_id)
+      match_data = get_match_data(match_id)
+      save_match(match_data)
+    end
+    
+    # Inserts match data into the database from a tar file comprised of
+    # previously scraped matches
+    def insert_matches_from_tar(file)
+      Archive.read_open_filename(file) do |ar|
+        while entry = ar.next_header
+          name = entry.pathname
+          match_data = ar.read_data
+          unless match_data.blank?
+            match_data = unserialize_match_data(match_data)
+            save_match(match_data)
+          end
+        end
+      end
+    end
+    
+    protected
+    
+    # Gets match data from the master server
     def get_match_data(match_id)
       uri = URI.parse match_url(match_id)
       resp = Net::HTTP.get_response uri
       
-      PHP.unserialize resp.body
+      unserialize_match_data(resp.body)
+    end
+    
+    # The master server returns all data serialized in PHP form. Luckily, there
+    # exists a library in ruby to unserialize PHP objects.
+    def unserialize_match_data(match_data)
+      PHP.unserialize match_data
     end
     
     # There are always two hash accesses required to access raw data, one of
     # which is the match_id itself. I suspect that the master server supports
     # grabbing data for multiple matches at once, but I haven't been able to
-    # figure out the syntax for such a query. For now, grab one match at once.
+    # figure out the syntax for such a query. For now, grab one match at a time.
     #
     # 1.9.3-p194 :026 > match_data['match_summ'].keys
     # => [91000000]
@@ -61,6 +89,7 @@ module Scrapers
       end
     end
 
+    # Prepares the raw match data for postgres
     def typed_values(klass, values)
       typed_values = {}
 
@@ -72,25 +101,30 @@ module Scrapers
       typed_values
     end
     
+    # Remaps value names that don't play well with Rails
     def remap_value_names(map, values)
       map.each do |old_name, new_name|
-        values[new_name] = values.delete old_name
+        values[new_name] = values.delete(old_name)
       end
     end
     
+    # Removes redundant values
     def filter_values(value_names, values)
       value_names.each do |value_name|
         values.delete value_name
       end
     end
     
-    def save_match(match_id)
-      match_data = get_match_data(match_id)
-      save_match_summary(match_data)
-      save_player_stats(match_data)
+    # Inserts a match into the database
+    def save_match(match_data)
+      begin
+        save_match_summary(match_data)
+        save_player_stats(match_data)
+      rescue
+      end
     end
     
-    def save_match_summary(match_data)      
+    def save_match_summary(match_data)
       match_id = match_id_from_data(match_data)
       match_summary = match_data['match_summ'][match_id]
       
@@ -113,6 +147,6 @@ module Scrapers
         MatchPlayer.create(player_stats)
       end
     end
-   
+    
   end
 end
