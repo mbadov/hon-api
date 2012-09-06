@@ -38,4 +38,4 @@ gem 'jquery-rails'
 
 gem 'whenever'
 gem 'php_serialize'
-gem 'libarchive'
+#gem 'libarchive'
