@@ -3,7 +3,8 @@ require "uri"
 
 module Scrapers
   class MatchStatsScraper
-    def initialize(scraper_account, login_on_init = true)
+    def initialize(scraper_account = nil, login_on_init = true)
+      scraper_account ||= ScraperAccount.first
       @account = scraper_account.username
       @password = scraper_account.password
       @cookie = nil
@@ -24,6 +25,13 @@ module Scrapers
     
     def match_url(match_id)
       "http://masterserver.hon.s2games.com/client_requester.php?f=get_match_stats&match_id[]=#{match_id}&cookie=#{@cookie}"
+    end
+    
+    # Inserts a range of matches into the database from the master server
+    def save_matches_from_web(start_id, end_id)
+      start_id.upto(end_id-1).each do |match_id|
+        save_match_from_web(match_id)
+      end
     end
     
     # Inserts match data into the database from the master server
